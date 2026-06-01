@@ -3,13 +3,13 @@ package scaling
 import (
 	"time"
 
-	"github.com/intel/power-optimization-library/pkg/power"
+	"github.com/cluster-power-manager/cluster-power-manager/internal/power"
 )
 
 const FrequencyNotYetSet int = -1
 
 type CPUScalingOpts struct {
-	CPU                        power.Cpu
+	CPU                        power.CPU
 	SamplePeriod               time.Duration
 	CooldownPeriod             time.Duration
 	TargetUsage                int

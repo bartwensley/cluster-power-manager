@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	powerv1alpha1 "github.com/cluster-power-manager/cluster-power-manager/api/v1alpha1"
-	power "github.com/intel/power-optimization-library/pkg/power"
+	"github.com/cluster-power-manager/cluster-power-manager/internal/power"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -59,7 +59,7 @@ func setupMockHostForSharedPool(profileName string, sharedCPUs []uint) *hostMock
 	h.On("GetAllExclusivePools").Return(&power.PoolList{})
 	ep.On("GetPowerProfile").Return(pm)
 	sp.On("SetPowerProfile", pm).Return(nil)
-	rp.On("SetCpuIDs", []uint{}).Return(nil)
+	rp.On("SetCPUIDs", []uint{}).Return(nil)
 	return h
 }
 
@@ -160,16 +160,16 @@ func TestEnvTest_Reconcile_WithReservedCPUs(t *testing.T) {
 	h.On("GetReservedPool").Return(rp)
 	sharedPoolEP.On("GetPowerProfile").Return(sharedPM)
 	sp.On("SetPowerProfile", sharedPM).Return(nil)
-	rp.On("SetCpuIDs", []uint{}).Return(nil)
+	rp.On("SetCPUIDs", []uint{}).Return(nil)
 
 	// configureReservedPools mocks
 	h.On("GetAllExclusivePools").Return(&power.PoolList{})
-	sp.On("MoveCpuIDs", []uint{0, 1}).Return(nil)
+	sp.On("MoveCPUIDs", []uint{0, 1}).Return(nil)
 	h.On("AddExclusivePool", fmt.Sprintf("%s-reserved-%v", nodeName, []uint{0, 1})).Return(pseudoPool, nil)
 	h.On("GetExclusivePool", "perf-prof").Return(perfPoolEP)
 	perfPoolEP.On("GetPowerProfile").Return(perfPM)
 	pseudoPool.On("SetPowerProfile", perfPM).Return(nil)
-	pseudoPool.On("SetCpuIDs", []uint{0, 1}).Return(nil)
+	pseudoPool.On("SetCPUIDs", []uint{0, 1}).Return(nil)
 
 	r := createNodeConfigReconcilerWithEnvTest(t, cl, h)
 

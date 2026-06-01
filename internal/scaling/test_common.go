@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/intel/power-optimization-library/pkg/power"
+	"github.com/cluster-power-manager/cluster-power-manager/internal/power"
 )
 
 // setupScalingTestFiles creates a mock filesystem for scaling tests
@@ -73,7 +73,7 @@ func setupScalingTestFiles(cores int, cpufiles map[string]string) (power.Host, f
 	originalGetFromLscpu := power.GetFromLscpu
 	power.GetFromLscpu = power.TestGetFromLscpu
 	host, err := power.CreateInstanceWithConf("test-node", power.LibConfig{
-		CpuPath:    "testing/cpus",
+		CPUPath:    "testing/cpus",
 		ModulePath: "testing/proc.modules",
 		Cores:      uint(cores),
 	})
