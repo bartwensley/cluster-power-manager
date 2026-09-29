@@ -1,12 +1,18 @@
 ARG BASE_IMAGE=registry.fedoraproject.org/fedora-minimal:42
 ARG BUILDER_IMAGE=quay.io/projectquay/golang:1.24
-ARG STRICTFIPS="false"
 
 # Build the node agent binary
 FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS builder
 ARG TARGETOS \
-    TARGETARCH \
-    STRICTFIPS
+    TARGETARCH
+
+# Go toolchain settings, consumed directly by the go command. The defaults
+# produce a static binary suitable for the default scratch BASE_IMAGE.
+# Overriding CGO_ENABLED=1 yields a dynamically linked binary and requires a
+# BASE_IMAGE that provides a dynamic loader and the needed shared libraries.
+ARG CGO_ENABLED=0
+ARG GOFLAGS
+ARG GOEXPERIMENT
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -29,17 +35,7 @@ RUN mkdir -p /install_root/etc \
     && tail -1 /etc/passwd > /install_root/etc/passwd
 
 # Build
-# When STRICTFIPS is true, enable CGO and the strictfipsruntime build tag
-# for FIPS-compliant builds required by downstream.
-# Note: CGO_ENABLED=1 breaks cross-compilation.
-# STRICTFIPS defaults to "false", so upstream cross-compilation is unaffected.
-RUN if [ "$STRICTFIPS" = "true" ]; then \
-        CGO_ENABLED=1 GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH GO111MODULE=on \
-        go build -tags strictfipsruntime -a -o /install_root/nodeagent ./main.go; \
-    else \
-        CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH GO111MODULE=on \
-        go build -a -o /install_root/nodeagent ./main.go; \
-    fi
+RUN GO111MODULE=on GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH go build -a -o /install_root/nodeagent ./main.go
 
 FROM ${BASE_IMAGE}
 WORKDIR /

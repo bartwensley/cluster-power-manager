@@ -1,12 +1,18 @@
 ARG BASE_IMAGE=scratch
 ARG BUILDER_IMAGE=quay.io/projectquay/golang:1.24
-ARG STRICTFIPS="false"
 
 # Build the manager binary
 FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS builder
 ARG TARGETOS \
-    TARGETARCH \
-    STRICTFIPS
+    TARGETARCH
+
+# Go toolchain settings, consumed directly by the go command. The defaults
+# produce a static binary suitable for the default scratch BASE_IMAGE.
+# Overriding CGO_ENABLED=1 yields a dynamically linked binary and requires a
+# BASE_IMAGE that provides a dynamic loader and the needed shared libraries.
+ARG CGO_ENABLED=0
+ARG GOFLAGS
+ARG GOEXPERIMENT
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -24,17 +30,7 @@ COPY pkg/ pkg/
 COPY internal/ internal/
 
 # Build
-# When STRICTFIPS is true, enable CGO and the strictfipsruntime build tag
-# for FIPS-compliant builds required by downstream.
-# Note: CGO_ENABLED=1 breaks cross-compilation.
-# STRICTFIPS defaults to "false", so upstream cross-compilation is unaffected.
-RUN if [ "$STRICTFIPS" = "true" ]; then \
-        CGO_ENABLED=1 GO111MODULE=on GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH \
-        go build -tags strictfipsruntime -a -o manager main.go; \
-    else \
-        CGO_ENABLED=0 GO111MODULE=on GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH \
-        go build -a -o manager main.go; \
-    fi
+RUN GO111MODULE=on GOOS=${TARGETOS:-linux} GOARCH=$TARGETARCH go build -a -o manager main.go
 
 # Final image
 FROM ${BASE_IMAGE}
